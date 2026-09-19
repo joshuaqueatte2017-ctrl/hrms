@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bulk Objective Test Scorer</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f3f6fb;color:#172033}
+.hidden{display:none!important}.login{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1d4ed8,#7c3aed)}
+.login-card{width:min(420px,92%);background:#fff;padding:34px;border-radius:18px;box-shadow:0 20px 60px #0004}.login-card h1{margin:0 0 8px}.login-card p{color:#64748b}
+input,select,button{font:inherit}input[type=text],input[type=password],input[type=number],input[type=file]{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:9px;background:#fff}
+label{display:block;font-weight:700;margin:14px 0 7px}button{border:0;border-radius:9px;padding:11px 17px;cursor:pointer;font-weight:700}.primary{background:#2563eb;color:white}.success{background:#059669;color:white}.danger{background:#dc2626;color:white}.secondary{background:#64748b;color:white}
+.app{display:none}.topbar{background:#172554;color:#fff;padding:17px 25px;display:flex;justify-content:space-between;align-items:center}.topbar h1{margin:0;font-size:21px}.wrap{max-width:1450px;margin:25px auto;padding:0 18px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}.card{background:white;border-radius:15px;padding:20px;box-shadow:0 4px 18px #0f172a12;margin-bottom:18px}.card h2{margin-top:0;font-size:18px}.wide{grid-column:span 2}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.status{padding:12px;border-radius:9px;background:#eff6ff;color:#1e40af;margin-top:14px}.error{background:#fef2f2;color:#991b1b}.ok{background:#ecfdf5;color:#065f46}.progress{height:18px;background:#e2e8f0;border-radius:20px;overflow:hidden;margin-top:10px}.bar{height:100%;width:0;background:#2563eb;transition:width .15s}.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.stat{padding:16px;border-radius:12px;background:#f8fafc}.stat b{display:block;font-size:24px;margin-top:5px}
+.small{font-size:12px;color:#64748b}.table-wrap{overflow:auto;max-height:500px;border:1px solid #e2e8f0;border-radius:10px}.table-wrap table{border-collapse:collapse;width:100%;font-size:12px}.table-wrap th,.table-wrap td{border-bottom:1px solid #e2e8f0;padding:7px;text-align:left;white-space:nowrap}.table-wrap th{position:sticky;top:0;background:#e2e8f0;z-index:1}
+@media(max-width:900px){.grid,.summary{grid-template-columns:1fr 1fr}.wide{grid-column:span 2}}@media(max-width:600px){.grid,.summary{grid-template-columns:1fr}.wide{grid-column:span 1}}
+</style>
+</head>
+<body>
+
+<section id="login" class="login">
+ <div class="login-card">
+  <center><h2>RESPONSES APPLICATION</h2>
+    <hr>
+    <center><h2>LOGIN</h2>
+	<p style="color: red;">Please Provide Login Credentials!</p></center>
+  <hr>
+  <label>Username</label><input id="username" type="text" autocomplete="username" value="admin">
+  <label>Password</label><input id="password" type="password" autocomplete="current-password">
+  <button class="primary" style="width:100%;margin-top:18px" onclick="login()">Login</button>
+  <div id="loginMsg" class="status error hidden"></div>
+  <!--<p class="small">Demo login: admin / admin123</p>-->
+  <center><p>Powered By: O. Q. Q. Sevices International</P></center>
+  <center><p>GSM: +231770731101</P></center>
+ </div>
+</section>
+
+<section id="app" class="app">
+ <div class="topbar">
+  <h1>Test Scorer</h1>
+  <button class="secondary" onclick="logout()">Logout</button>
+ </div>
+ <div class="wrap">
+  <div class="grid">
+   <div class="card">
+    <h2>Test Information</h2>
+    <label>Subject Code *</label><input id="subjectCode" type="text" required>
+    <label>Start Question *</label><input id="startQ" type="number" min="1" required>
+    <label>End Question *</label><input id="endQ" type="number" min="1" required>
+    <label>Candidate ID Length *</label><input id="idLength" type="number" min="1" required>
+   </div>
+
+   <div class="card">
+    <h2>Scoring Key</h2>
+    <label>Choose Answer Key File *</label>
+    <input id="keyFile" type="file" accept=".txt,.csv,.tsv">
+    <p class="small">Accepted key letters: A, B, C, D only. Example: ACDCADDDBAC...</p>
+    <div id="keyStatus" class="status">No key loaded.</div>
+   </div>
+
+   <div class="card wide">
+    <h2>Candidate Responses</h2>
+    <label>Choose Structured Response File *</label>
+    <input id="responseFile" type="file" accept=".txt,.csv,.tsv">
+    <p class="small">
+      Format supported: CandidateID SubjectCode ObjectiveResponses.
+      Responses maintain their original positions. Example:
+      <br>2001129020 402112   ACDCADDDBAC...
+      <br>2001129006 402112 A
+      <br>2001129008 402112MA  ACDC...
+    </p>
+    <div id="responseStatus" class="status">No response file loaded.</div>
+   </div>
+  </div>
+
+  <div class="card">
+   <h2>Processing</h2>
+   <div id="mainStatus" class="status">Ready.</div>
+   <div class="progress"><div id="bar" class="bar"></div></div>
+   <div id="progressText" class="small" style="margin-top:7px">0%</div>
+   <div class="actions">
+    <button class="primary" onclick="processData()">Process & Score</button>
+    <button class="success" onclick="exportExcel()">Export Excel</button>
+    <button class="danger" onclick="clearAll()">Clear</button>
+   </div>
+  </div>
+
+  <div id="resultsCard" class="card hidden">
+   <h2>Results Summary</h2>
+   <div class="summary">
+    <div class="stat">Candidates<b id="total">0</b></div>
+    <div class="stat">Passed<b id="passed">0</b></div>
+    <div class="stat">Failed<b id="failed">0</b></div>
+    <div class="stat">Absent / No Objective Response<b id="absent">0</b></div>
+   </div>
+   <div id="table" class="table-wrap" style="margin-top:18px"></div>
+  </div>
+ </div>
+</section>
+
+<script>
+let key=[], rawResponses='', results=[], parsedCount=0;
+
+function login(){
+ const u=document.getElementById('username').value.trim();
+ const p=document.getElementById('password').value;
+ if(u==='admin' && p==='admin123'){
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='block';
+ }else{
+  const m=document.getElementById('loginMsg');m.textContent='Invalid username or password.';m.classList.remove('hidden');
+ }
+}
+function logout(){location.reload()}
+
+document.getElementById('keyFile').addEventListener('change', async e=>{
+ const f=e.target.files[0]; if(!f)return;
+ const text=await f.text();
+ key=(text.toUpperCase().match(/[ABCD]/g)||[]);
+ const st=document.getElementById('keyStatus');
+ if(key.length){st.className='status ok';st.textContent=`Answer key loaded: ${key.length} valid A-D answers detected.`}
+ else{st.className='status error';st.textContent='No valid A, B, C or D answer key was detected.'}
+});
+document.getElementById('responseFile').addEventListener('change', async e=>{
+ const f=e.target.files[0];if(!f)return;
+ rawResponses=await f.text();
+ const lines=rawResponses.split(/\r?\n/).filter(x=>x.trim());
+ const st=document.getElementById('responseStatus');
+ st.className='status ok';st.textContent=`Response file loaded: ${lines.length.toLocaleString()} non-empty lines detected.`;
+});
+
+function validID(s,n){
+ return new RegExp('^\\d{'+n+'}$').test(s);
+}
+
+/*
+  Parser for the user's actual structure.
+  The first token is CandidateID.
+  The second token may be SubjectCode or SubjectCode+MA (e.g. 402112M).
+  MA and FA are positional optional fields. We use the question range to
+  identify objective responses and never reject a candidate merely because
+  MA/FA are blank.
+*/
+function parseLine(line, idLen, subject){
+  // Fixed-width response format:
+  // Q1 ALWAYS starts at Line 1, Column 21 (1-based).
+  // Columns 18-19 may contain MA or FA, and column 20 is the separator.
+  // MA/FA are recognized as part of the input structure but are NEVER exported as columns.
+  line=line.replace(/\uFEFF/g,'').replace(/\r/g,'');
+  if(!line.trim()) return null;
+
+  const head=line.match(/^\s*(\d+)\s+(\S+)/);
+  if(!head) return null;
+
+  const id=head[1];
+  if(!validID(id,idLen)) return null;
+
+  const sc=head[2].trim();
+  const afterSubject=line.slice(head[0].length);
+
+  // Support the compact absent format: CandidateID SubjectCode A
+  // Here A is a status marker, not Q1.
+  if(/^\s*A\s*$/i.test(afterSubject)){
+    return {CandidateID:id, SubjectCode:sc||subject, Objective:'', Absent:true};
+  }
+
+  // The objective response area is fixed at Column 21.
+  // Do NOT trim or collapse anything before/after this point.
+  let objective=line.length >= 20 ? line.slice(20) : '';
+
+  // If Column 21 contains A and there are no further responses, treat it as absent.
+  if(/^A\s*$/i.test(objective)) objective='';
+
+  return {
+    CandidateID:id,
+    SubjectCode:sc||subject,
+    Objective:objective.toUpperCase(),
+    Absent:false
+  };
+}
+
+
+function grade(score,total){
+ if(total<=0)return {code:'F9',label:'Fail'};
+ const pct=(score/total)*100;
+ if(pct>=80)return {code:'A1',label:'Excellent'};
+ if(pct>=70)return {code:'B2',label:'Good'};
+ if(pct>=60)return {code:'C6',label:'Credit'};
+ if(pct>=50)return {code:'D7',label:'Pass'};
+ return {code:'F9',label:'Fail'};
+}
+
+async function processData(){
+ const subject=document.getElementById('subjectCode').value.trim();
+ const start=Number(document.getElementById('startQ').value);
+ const end=Number(document.getElementById('endQ').value);
+ const idLen=Number(document.getElementById('idLength').value);
+ const status=document.getElementById('mainStatus');
+
+ if(!subject || !start || !end || !idLen){status.className='status error';status.textContent='Subject Code, Start Question, End Question and Candidate ID Length are required.';return}
+ if(end<start){status.className='status error';status.textContent='End Question must be greater than or equal to Start Question.';return}
+ if(!key.length){status.className='status error';status.textContent='Please choose a valid scoring key file.';return}
+ if(!rawResponses){status.className='status error';status.textContent='Please choose a candidate response file.';return}
+
+ const qCount=end-start+1;
+ if(key.length<qCount){status.className='status error';status.textContent=`The scoring key contains ${key.length} valid answers, but ${qCount} questions were requested.`;return}
+
+ const lines=rawResponses.split(/\r?\n/);
+ results=[];parsedCount=0;
+ const batch=1000;
+
+ for(let i=0;i<lines.length;i++){
+   const r=parseLine(lines[i],idLen,subject);
+   if(r){
+    parsedCount++;
+    const row={CandidateID:r.CandidateID,SubjectCode:r.SubjectCode};
+    let score=0, answered=0;
+    for(let q=0;q<qCount;q++){
+      const ans=r.Objective[q]||'';
+      row['Q'+(start+q)]=ans;
+      if(ans==='A'||ans==='B'||ans==='C'||ans==='D'){
+        answered++;
+        if(ans===key[q])score++;
+      }
+    }
+    row.Correct=score;
+    row.Attempted=answered;
+    row.TotalQuestions=qCount;
+    row.Percentage=qCount?((score/qCount)*100):0;
+    row.Result=grade(score,qCount).label;
+    row.Grade=grade(score,qCount).code;
+    if(answered===0)row.Result='Fail';
+    results.push(row);
+   }
+   if(i%batch===0 || i===lines.length-1){
+     const pct=Math.round(((i+1)/lines.length)*100);
+     document.getElementById('bar').style.width=pct+'%';
+     document.getElementById('progressText').textContent=pct+'%';
+     status.textContent=`Processing ${Math.min(i+1,lines.length).toLocaleString()} of ${lines.length.toLocaleString()} lines...`;
+     await new Promise(requestAnimationFrame);
+   }
+ }
+ if(!results.length){
+   status.className='status error';
+   status.textContent='No valid candidate records were detected in the structured response file.';
+   return;
+ }
+ const pass=results.filter(x=>x.Grade!=='F9').length;
+ const fail=results.length-pass;
+ const absent=results.filter(x=>x.Attempted===0).length;
+ document.getElementById('total').textContent=results.length.toLocaleString();
+ document.getElementById('passed').textContent=pass.toLocaleString();
+ document.getElementById('failed').textContent=fail.toLocaleString();
+ document.getElementById('absent').textContent=absent.toLocaleString();
+ document.getElementById('resultsCard').classList.remove('hidden');
+ status.className='status ok';
+ status.textContent=`Completed. ${results.length.toLocaleString()} candidate records processed.`;
+ renderTable(results.slice(0,100));
+}
+
+function renderTable(rows){
+ if(!rows.length)return;
+ const cols=Object.keys(rows[0]);
+ let h='<table><thead><tr>'+cols.map(c=>`<th>${escapeHtml(c)}</th>`).join('')+'</tr></thead><tbody>';
+ h+=rows.map(r=>'<tr>'+cols.map(c=>`<td>${escapeHtml(String(r[c]??''))}</td>`).join('')+'</tr>').join('');
+ h+='</tbody></table>';
+ document.getElementById('table').innerHTML=h;
+}
+function escapeHtml(s){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+
+function exportExcel(){
+ if(!results.length){alert('Process the candidate file before exporting.');return}
+ const subject=document.getElementById('subjectCode').value.trim();
+ const wb=XLSX.utils.book_new();
+ const ws=XLSX.utils.json_to_sheet(results);
+ XLSX.utils.book_append_sheet(wb,ws,'Scored Results');
+ const filename=`Bulk_Objective_Scored_${subject||'Results'}.xlsx`;
+ XLSX.writeFile(wb,filename);
+}
+
+function clearAll(){
+ key=[];rawResponses='';results=[];
+ ['keyFile','responseFile','subjectCode','startQ','endQ','idLength'].forEach(id=>document.getElementById(id).value='');
+ document.getElementById('keyStatus').className='status';document.getElementById('keyStatus').textContent='No key loaded.';
+ document.getElementById('responseStatus').className='status';document.getElementById('responseStatus').textContent='No response file loaded.';
+ document.getElementById('mainStatus').className='status';document.getElementById('mainStatus').textContent='Ready.';
+ document.getElementById('bar').style.width='0%';document.getElementById('progressText').textContent='0%';
+ document.getElementById('resultsCard').classList.add('hidden');document.getElementById('table').innerHTML='';
+}
+
+
+
+</script>
+</body>
+</html>

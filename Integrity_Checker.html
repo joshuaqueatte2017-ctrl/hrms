@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grade File Integrity Checker</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f4f7fb;color:#172033}
+header{background:linear-gradient(135deg,#182848,#4b6cb7);color:#fff;padding:22px 28px;box-shadow:0 4px 18px #0002}
+header h1{margin:0 0 6px;font-size:28px}header p{margin:0;opacity:.9}
+.container{max-width:1400px;margin:25px auto;padding:0 18px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+.card{background:#fff;border-radius:14px;padding:20px;box-shadow:0 5px 20px #17203312;border:1px solid #e7ebf2}
+.card h2{font-size:18px;margin:0 0 14px}.upload{border:2px dashed #b8c5db;border-radius:12px;padding:20px;text-align:center;background:#f8faff}
+input[type=file]{width:100%;padding:12px;background:#fff;border:1px solid #ccd5e4;border-radius:8px}
+label{display:block;font-weight:bold;margin-bottom:7px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}
+button{border:0;border-radius:9px;padding:12px 18px;font-weight:bold;cursor:pointer}
+.primary{background:#356ae6;color:#fff}.success{background:#16a085;color:#fff}.warning{background:#f39c12;color:#fff}.danger{background:#e74c3c;color:#fff}.dark{background:#263445;color:#fff}
+button:disabled{opacity:.45;cursor:not-allowed}
+.summary{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin:18px 0}
+.stat{color:#fff;border-radius:13px;padding:16px;min-height:95px}.stat b{display:block;font-size:26px;margin-top:8px}.blue{background:#3b73e6}.green{background:#16a085}.red{background:#e74c3c}.orange{background:#f39c12}.purple{background:#7b61c9}.gray{background:#596779}
+.progress-wrap{background:#dfe6f1;height:18px;border-radius:20px;overflow:hidden}.progress{height:100%;width:0;background:linear-gradient(90deg,#36d1dc,#5b86e5);transition:width .15s}
+.status{margin:10px 0;font-weight:bold}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}.toolbar input,.toolbar select{padding:10px;border:1px solid #ccd5e4;border-radius:8px}
+.table-wrap{overflow:auto;max-height:600px;border:1px solid #e2e7ef;border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:13px;background:#fff}th,td{padding:10px;border-bottom:1px solid #e8edf4;text-align:left;white-space:nowrap}th{background:#eef3fb;position:sticky;top:0;z-index:1}
+.badge{padding:5px 8px;border-radius:20px;font-size:11px;font-weight:bold}.b-added{background:#d8f8ec;color:#087a58}.b-removed{background:#ffe0e0;color:#b32121}.b-altered{background:#fff0cf;color:#9a5a00}.b-same{background:#e0eaff;color:#3157a6}.b-duplicate{background:#f0ddff;color:#7135a5}
+small{color:#64748b}.hash{font-family:monospace;word-break:break-all;background:#f5f7fa;padding:10px;border-radius:8px;margin-top:8px}
+.notice{background:#fff8df;border-left:5px solid #f1b400;padding:12px;border-radius:8px;margin-top:10px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}.summary{grid-template-columns:repeat(2,1fr)}} 
+</style>
+
+<style>
+#loginScreen{position:fixed;inset:0;background:linear-gradient(135deg,#101c3a,#4169c1);display:flex;align-items:center;justify-content:center;z-index:9999}
+.login-card{width:min(420px,92%);background:#fff;border-radius:18px;padding:32px;box-shadow:0 20px 60px #0005}
+.login-card h2{margin:0 0 8px}.login-card p{color:#64748b}.login-card input{width:100%;padding:13px;margin:8px 0 14px;border:1px solid #ccd5e4;border-radius:9px;font-size:15px}
+.login-card button{width:100%;background:#356ae6;color:#fff;font-size:15px}.login-error{color:#d63031;font-weight:bold;min-height:20px;margin-bottom:8px}
+.userbar{float:right;display:flex;gap:10px;align-items:center}.logout{padding:8px 12px;background:#e74c3c;color:#fff;border-radius:8px;border:0;font-weight:bold;cursor:pointer}
+</style>
+</head>
+<body>
+<div id="loginScreen">
+ <div class="login-card">
+  <h2>🔐 System Login</h2>
+  <p>Grade File Integrity Checker</p>
+  <form id="loginForm">
+   <label>Username</label>
+   <input id="loginUser" autocomplete="username" required>
+   <label>Password</label>
+   <input id="loginPass" type="password" autocomplete="current-password" required>
+   <div class="login-error" id="loginError"></div>
+   <button type="submit">Login</button>
+  </form>
+  <small>Default login: <b>admin</b> / <b>admin123</b></small>
+ </div>
+</div>
+
+<body>
+<header>
+<div class="userbar"><span>👤 <b id="loggedUser">Admin</b></span><button class="logout" id="logoutBtn">Logout</button></div>
+<h1>🔐 Grade File Integrity Checker</h1>
+<p>Compare a trusted/original grade file against a suspected/current file and identify every material change.</p>
+</header>
+
+<div class="container">
+<div class="grid">
+<div class="card">
+<h2>📁 Original / Trusted Grade File</h2>
+<div class="upload">
+<label for="originalFile">Choose trusted file</label>
+<input id="originalFile" type="file" accept=".csv,.xlsx,.xls,.txt">
+<p><small>CSV, XLSX, XLS or TXT. No PapaParse is used.</small></p>
+<div id="originalInfo"></div>
+</div>
+</div>
+<div class="card">
+<h2>🚨 Suspected / Current Grade File</h2>
+<div class="upload">
+<label for="suspectedFile">Choose suspected file</label>
+<input id="suspectedFile" type="file" accept=".csv,.xlsx,.xls,.txt">
+<p><small>Candidate ID and grade/value columns are compared.</small></p>
+<div id="suspectedInfo"></div>
+</div>
+</div>
+</div>
+
+<div class="card" style="margin-top:18px">
+<h2>⚙️ Comparison Settings</h2>
+<div class="grid">
+<div><label>Candidate ID column</label><input id="idColumn" value="" placeholder="Auto-detect: CandidateID, StudentID, ID..."></div>
+<div><label>Grade / Value column</label><input id="gradeColumn" value="" placeholder="Auto-detect: Grade, Score, Mark, Value..."></div>
+<div><label>Comparison mode</label><select id="mode"><option value="normalized">Normalized comparison</option><option value="exact">Exact comparison</option></select></div>
+<div><label>CSV delimiter</label><select id="delimiter"><option value=",">Comma (,)</option><option value=";">Semicolon (;)</option><option value="	">Tab</option></select></div>
+</div>
+<div class="actions">
+<button class="primary" id="compareBtn" disabled>🔎 Compare Files</button>
+<button class="dark" id="clearBtn">↻ Clear</button>
+<button class="success" id="csvBtn" disabled>⬇ Export CSV</button>
+<button class="success" id="xlsxBtn" disabled>⬇ Export Excel</button>
+</div>
+<div class="status" id="status">Select both files to begin.</div>
+<div class="progress-wrap"><div class="progress" id="progress"></div></div>
+<div id="hashes"></div>
+</div>
+
+<div class="summary">
+<div class="stat blue">Original Records<b id="sOriginal">0</b></div>
+<div class="stat gray">Current Records<b id="sCurrent">0</b></div>
+<div class="stat green">Unchanged<b id="sSame">0</b></div>
+<div class="stat red">Altered<b id="sAltered">0</b></div>
+<div class="stat orange">Added / Removed<b id="sAddedRemoved">0</b></div>
+<div class="stat purple">Duplicates<b id="sDuplicates">0</b></div>
+</div>
+
+<div class="card">
+<h2>📋 Detailed Integrity Report</h2>
+<div class="toolbar">
+<input id="search" placeholder="Search Candidate ID, status, old/new value..." disabled>
+<select id="filter" disabled>
+<option value="ALL">All records</option><option value="ALTERED">Altered</option>
+<option value="ADDED">Added</option><option value="REMOVED">Removed</option>
+<option value="UNCHANGED">Unchanged</option><option value="DUPLICATE">Duplicate ID</option>
+</select>
+</div>
+<div class="table-wrap">
+<table><thead><tr>
+<th>#</th><th>Candidate ID</th><th>Column</th><th>Status</th><th>Original Score</th><th>Current Score</th><th>Details</th>
+</tr></thead><tbody id="reportBody"><tr><td colspan="7" style="text-align:center;padding:35px">No comparison performed.</td></tr></tbody></table>
+</div>
+</div>
+</div>
+
+<script>
+const LOGIN_KEY="gradeIntegrityLoggedIn";
+function showApp(){
+  document.getElementById("loginScreen").style.display="none";
+  document.getElementById("loggedUser").textContent=localStorage.getItem("gradeIntegrityUser")||"Admin";
+}
+if(localStorage.getItem(LOGIN_KEY)==="true") showApp();
+document.getElementById("loginForm").onsubmit=e=>{
+ e.preventDefault();
+ const u=document.getElementById("loginUser").value.trim(),p=document.getElementById("loginPass").value;
+ if(u==="admin" && p==="admin123"){
+   localStorage.setItem(LOGIN_KEY,"true");localStorage.setItem("gradeIntegrityUser",u);showApp();
+ }else document.getElementById("loginError").textContent="Invalid username or password.";
+};
+document.getElementById("logoutBtn").onclick=()=>{
+ localStorage.removeItem(LOGIN_KEY);localStorage.removeItem("gradeIntegrityUser");location.reload();
+};
+const $=id=>document.getElementById(id);
+let originalRows=[], currentRows=[], report=[], exportRows=[], originalHash="", currentHash="";
+let originalFileName="", currentFileName="";
+
+function setProgress(n){$("progress").style.width=n+"%"}
+function norm(v){return String(v??"").trim().replace(/\s+/g," ").toLowerCase()}
+function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+
+function parseCSV(text, delimiter=","){
+  const rows=[]; let row=[], cell="", quoted=false;
+  for(let i=0;i<text.length;i++){let c=text[i],n=text[i+1];
+    if(c=='"' && quoted && n=='"'){cell+='"';i++;continue}
+    if(c=='"'){quoted=!quoted;continue}
+    if(c===delimiter && !quoted){row.push(cell);cell="";continue}
+    if((c=="\n"||c=="\r")&&!quoted){if(c=="\r"&&n=="\n")i++;row.push(cell);cell="";if(row.some(x=>x!==""))rows.push(row);row=[];continue}
+    cell+=c;
+  }
+  if(cell!==""||row.length){row.push(cell);if(row.some(x=>x!==""))rows.push(row)}
+  return rows;
+}
+function matrixToObjects(matrix){
+  if(!matrix.length)return [];
+  const headers=matrix[0].map((h,i)=>String(h??"").trim()||"Column"+(i+1));
+  return matrix.slice(1).filter(r=>r.some(x=>String(x??"").trim()!=="")).map(r=>{
+    const o={};headers.forEach((h,i)=>o[h]=r[i]??"");return o;
+  });
+}
+async function sha256(file){
+  const buf=await file.arrayBuffer(), hash=await crypto.subtle.digest("SHA-256",buf);
+  return [...new Uint8Array(hash)].map(x=>x.toString(16).padStart(2,"0")).join("");
+}
+function detectColumn(rows, custom, candidates){
+  const keys=rows[0]?Object.keys(rows[0]):[];
+  if(custom && keys.includes(custom))return custom;
+  const lower=keys.map(k=>[k,k.toLowerCase().replace(/[\s_-]/g,"")]);
+  for(const c of candidates){let x=lower.find(a=>a[1]===c);if(x)return x[0]}
+  return keys[0]||"";
+}
+async function readFile(file){
+  const ext=file.name.split(".").pop().toLowerCase();
+  if(["xlsx","xls"].includes(ext)){
+    const data=await file.arrayBuffer();
+    const wb=XLSX.read(data,{type:"array"});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    return XLSX.utils.sheet_to_json(ws,{defval:""});
+  }
+  const text=await file.text();
+  const matrix=parseCSV(text,$("delimiter").value);
+  return matrixToObjects(matrix);
+}
+function fileInfo(el, target){el.addEventListener("change",async()=>{
+  const f=el.files[0];if(!f)return;
+  target.innerHTML="<small>Reading file...</small>";
+  try{
+    const rows=await readFile(f);
+    target.innerHTML="<small><b>"+esc(f.name)+"</b> — "+rows.length.toLocaleString()+" records</small>";
+    if(el.id==="originalFile")originalRows=rows;else currentRows=rows;
+    $("compareBtn").disabled=!(originalRows.length&&currentRows.length);
+  }catch(e){target.innerHTML="<small style='color:#c00'>Could not read file: "+esc(e.message)+"</small>"}
+})}
+fileInfo($("originalFile"),$("originalInfo"));fileInfo($("suspectedFile"),$("suspectedInfo"));
+
+$("compareBtn").onclick=compare;
+async function compare(){
+  $("compareBtn").disabled=true;$("csvBtn").disabled=true;$("xlsxBtn").disabled=true;
+  $("search").disabled=true;$("filter").disabled=true;report=[];setProgress(0);
+
+  $("status").textContent="Calculating file hashes...";
+  const of=$("originalFile").files[0], cf=$("suspectedFile").files[0];
+  originalHash=await sha256(of);setProgress(10);currentHash=await sha256(cf);setProgress(20);
+
+  $("hashes").innerHTML='<div class="hash"><b>Original SHA-256:</b> '+originalHash+'</div><div class="hash"><b>Current SHA-256:</b> '+currentHash+'</div>'+
+    (originalHash===currentHash?'<div class="notice">✓ The complete files have identical SHA-256 hashes.</div>':'<div class="notice">⚠ The complete file hashes differ. Column-by-column record analysis follows.</div>');
+
+  const idCol=detectColumn(originalRows,$("idColumn").value,["candidateid","studentid","candidate","studentno","studentnumber","id"]);
+  const curId=detectColumn(currentRows,$("idColumn").value,["candidateid","studentid","candidate","studentno","studentnumber","id"]);
+  if(!idCol||!curId) throw new Error("Candidate ID column could not be detected.");
+
+  // Determine the score columns. If the user enters a column name, compare that column.
+  // Otherwise compare every column that exists in both files, excluding the Candidate ID.
+  const originalKeys=originalRows[0]?Object.keys(originalRows[0]):[];
+  const currentKeys=currentRows[0]?Object.keys(currentRows[0]):[];
+  const clean = s => String(s).trim().toLowerCase().replace(/[\s_-]/g,"");
+  let requested=$("gradeColumn").value.trim();
+
+  let scorePairs=[];
+  if(requested){
+    const ok=originalKeys.find(k=>clean(k)===clean(requested));
+    const ck=currentKeys.find(k=>clean(k)===clean(requested));
+    if(!ok||!ck) throw new Error("The specified score column must exist in both files.");
+    scorePairs=[{original:ok,current:ck}];
+  }else{
+    const currentByClean=new Map(currentKeys.map(k=>[clean(k),k]));
+    for(const ok of originalKeys){
+      if(ok===idCol) continue;
+      const ck=currentByClean.get(clean(ok));
+      if(ck) scorePairs.push({original:ok,current:ck});
+    }
+    if(!scorePairs.length) throw new Error("No matching score/value columns were found in both files.");
+  }
+
+  const om=new Map(),cm=new Map(),od=new Set(),cd=new Set();
+  originalRows.forEach((r,i)=>{
+    let k=String(r[idCol]??"").trim();
+    if(om.has(k)) od.add(k); else om.set(k,{row:r,index:i});
+  });
+  currentRows.forEach((r,i)=>{
+    let k=String(r[curId]??"").trim();
+    if(cm.has(k)) cd.add(k); else cm.set(k,{row:r,index:i});
+  });
+
+  const keys=new Set([...om.keys(),...cm.keys()]);
+  let i=0;
+
+  for(const k of keys){
+    i++;
+    if(i%500===0)setProgress(20+Math.round(i/keys.size*70));
+    if(!k) continue;
+
+    const a=om.get(k), b=cm.get(k);
+
+    if(od.has(k)||cd.has(k)){
+      report.push({
+        candidateId:k,status:"DUPLICATE",oldValue:"",newValue:"",
+        details:"Duplicate Candidate ID detected in "+(od.has(k)&&cd.has(k)?"both files":od.has(k)?"original file":"current file"),
+        column:""
+      });
+      continue;
+    }
+
+    if(!a){
+      report.push({candidateId:k,status:"ADDED",oldValue:"",newValue:"",
+        details:"Candidate ID exists only in current file",column:""});
+      continue;
+    }
+
+    if(!b){
+      report.push({candidateId:k,status:"REMOVED",oldValue:"",newValue:"",
+        details:"Candidate ID exists only in original/trusted file",column:""});
+      continue;
+    }
+
+    // Compare every matching score column separately.
+    let alteredCount=0;
+    for(const pair of scorePairs){
+      const oldV=String(a.row[pair.original]??"");
+      const newV=String(b.row[pair.current]??"");
+      const same=$("mode").value==="exact"
+        ? oldV===newV
+        : norm(oldV)===norm(newV);
+
+      if(!same){
+        alteredCount++;
+        report.push({
+          candidateId:k,
+          status:"ALTERED",
+          oldValue:oldV,
+          newValue:newV,
+          details:"Score/value altered in column '"+pair.original+"'",
+          column:pair.original
+        });
+      }
+    }
+
+    // If no score/value was changed, keep one unchanged record for the candidate.
+    if(alteredCount===0){
+      report.push({
+        candidateId:k,status:"UNCHANGED",oldValue:"",newValue:"",
+        details:"All "+scorePairs.length+" matching score columns are unchanged",
+        column:""
+      });
+    }
+  }
+
+  setProgress(100);render();
+  $("status").textContent="Comparison complete. "+keys.size.toLocaleString()+" candidate records analyzed across "+scorePairs.length+" matching score column(s).";
+  $("compareBtn").disabled=false;$("csvBtn").disabled=false;$("xlsxBtn").disabled=false;$("search").disabled=false;$("filter").disabled=false;
+}
+
+function render(){
+  const q=norm($("search").value), f=$("filter").value;
+  const rows=report.filter(r=>
+    (f==="ALL"||r.status===f) &&
+    (!q||[r.candidateId,r.column,r.status,r.oldValue,r.newValue,r.details].some(x=>norm(x).includes(q)))
+  );
+
+  $("reportBody").innerHTML=rows.length?rows.map((r,i)=>`<tr>
+    <td>${i+1}</td>
+    <td>${esc(r.candidateId)}</td>
+    <td>${esc(r.column)}</td>
+    <td><span class="badge ${r.status==="ALTERED"?"b-altered":r.status==="ADDED"?"b-added":r.status==="REMOVED"?"b-removed":r.status==="DUPLICATE"?"b-duplicate":"b-same"}">${r.status}</span></td>
+    <td>${esc(r.oldValue)}</td>
+    <td>${esc(r.newValue)}</td>
+    <td>${esc(r.details)}</td>
+  </tr>`).join(""):'<tr><td colspan="7" style="text-align:center;padding:30px">No matching records.</td></tr>';
+
+  $("sOriginal").textContent=originalRows.length.toLocaleString();
+  $("sCurrent").textContent=currentRows.length.toLocaleString();
+  $("sSame").textContent=report.filter(x=>x.status==="UNCHANGED").length.toLocaleString();
+  $("sAltered").textContent=report.filter(x=>x.status==="ALTERED").length.toLocaleString();
+  $("sAddedRemoved").textContent=report.filter(x=>["ADDED","REMOVED"].includes(x.status)).length.toLocaleString();
+  $("sDuplicates").textContent=report.filter(x=>x.status==="DUPLICATE").length.toLocaleString();
+}
+
+$("search").oninput=render;$("filter").onchange=render;
+function csv(){
+  const head=["Candidate ID","Column","Status","Original Score","Current Score","Details"];
+  const data=[head,...report.map(r=>[r.candidateId,r.column,r.status,r.oldValue,r.newValue,r.details])];
+  const text=data.map(row=>row.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(",")).join("\r\n");
+  download(new Blob([text],{type:"text/csv;charset=utf-8"}),"Grade_Integrity_Report.csv");
+}
+
+function xlsx(){
+  const data=report.map(r=>({
+    "Candidate ID":r.candidateId,
+    "Column":r.column,
+    "Status":r.status,
+    "Original Score":r.oldValue,
+    "Current Score":r.newValue,
+    "Details":r.details
+  }));
+  const ws=XLSX.utils.json_to_sheet(data);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,"Integrity Report");
+  XLSX.writeFile(wb,"Grade_Integrity_Report.xlsx");
+}
+
+$("csvBtn").onclick=csv;$("xlsxBtn").onclick=xlsx;
+$("clearBtn").onclick=()=>location.reload();
+</script>
+</body>
+</html>

@@ -1,0 +1,1996 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Candidate Response Processor</title>
+
+<!-- SheetJS for Excel Export -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+
+<style>
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+}
+
+body{
+    font-family:Arial, Helvetica, sans-serif;
+    background:#f1f5f9;
+    color:#1e293b;
+}
+
+/* =========================
+   SIDEBAR
+========================= */
+
+.sidebar{
+    position:fixed;
+    left:0;
+    top:0;
+    bottom:0;
+    width:245px;
+
+    background:linear-gradient(
+        180deg,
+        #0f172a 0%,
+        #1e3a8a 45%,
+        #2563eb 100%
+    );
+
+    padding:20px 14px;
+    overflow-y:auto;
+    box-shadow:4px 0 15px rgba(0,0,0,.15);
+    z-index:1000;
+}
+
+.logo{
+    text-align:center;
+    padding:12px 5px 25px;
+    color:#fff;
+}
+
+.logo-icon{
+    font-size:42px;
+    margin-bottom:8px;
+}
+
+.logo h2{
+    color:#fff;
+    font-size:18px;
+    line-height:1.3;
+}
+
+.logo p{
+    color:#dbeafe;
+    font-size:11px;
+    margin-top:5px;
+}
+
+/* WHITE SIDEBAR MENU */
+
+.sidebar-menu{
+    margin-top:10px;
+}
+
+.sidebar-menu a,
+.sidebar-menu a:link,
+.sidebar-menu a:visited,
+.sidebar-menu a:active{
+    display:flex;
+    align-items:center;
+    gap:12px;
+
+    width:100%;
+    padding:12px 14px;
+    margin:5px 0;
+
+    border-radius:10px;
+
+    color:#ffffff !important;
+    text-decoration:none !important;
+
+    font-size:14px;
+    font-weight:600;
+
+    background:transparent;
+
+    transition:.25s ease;
+}
+
+.sidebar-menu a:hover{
+    background:rgba(255,255,255,.16) !important;
+    color:#ffffff !important;
+    transform:translateX(3px);
+}
+
+.sidebar-menu a.active{
+    background:rgba(255,255,255,.25) !important;
+    color:#ffffff !important;
+}
+
+.sidebar-menu a i,
+.sidebar-menu a span,
+.sidebar-menu a .icon{
+    color:#ffffff !important;
+}
+
+.menu-icon{
+    width:24px;
+    min-width:24px;
+    text-align:center;
+    font-size:18px;
+    color:#ffffff !important;
+}
+
+/* QUICK LINKS */
+
+.quick-title{
+    margin:25px 8px 8px;
+    color:#bfdbfe !important;
+    font-size:11px;
+    font-weight:bold;
+    text-transform:uppercase;
+}
+
+.quick-links a{
+    color:#ffffff !important;
+}
+
+/* =========================
+   MAIN CONTENT
+========================= */
+
+.main{
+    margin-left:245px;
+    min-height:100vh;
+    padding:25px;
+}
+
+.topbar{
+    background:#fff;
+    border-radius:14px;
+    padding:20px 25px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    box-shadow:0 3px 12px rgba(0,0,0,.07);
+    margin-bottom:20px;
+}
+
+.topbar h1{
+    font-size:24px;
+    color:#0f172a;
+}
+
+.topbar p{
+    margin-top:5px;
+    color:#64748b;
+    font-size:13px;
+}
+
+/* =========================
+   DASHBOARD CARDS
+========================= */
+
+.cards{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:15px;
+    margin-bottom:20px;
+}
+
+.card{
+    border-radius:14px;
+    padding:20px;
+    color:#fff;
+    min-height:125px;
+    box-shadow:0 5px 15px rgba(0,0,0,.08);
+}
+
+.card:nth-child(1){
+    background:linear-gradient(135deg,#2563eb,#1d4ed8);
+}
+
+.card:nth-child(2){
+    background:linear-gradient(135deg,#059669,#047857);
+}
+
+.card:nth-child(3){
+    background:linear-gradient(135deg,#f59e0b,#d97706);
+}
+
+.card:nth-child(4){
+    background:linear-gradient(135deg,#dc2626,#b91c1c);
+}
+
+.card-icon{
+    font-size:26px;
+    margin-bottom:10px;
+}
+
+.card-title{
+    font-size:12px;
+    opacity:.9;
+}
+
+.card-value{
+    font-size:28px;
+    font-weight:bold;
+    margin-top:5px;
+}
+
+/* =========================
+   SECTIONS
+========================= */
+
+.section{
+    background:#fff;
+    border-radius:14px;
+    padding:22px;
+    margin-bottom:20px;
+    box-shadow:0 3px 12px rgba(0,0,0,.06);
+}
+
+.section-title{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:20px;
+    font-size:18px;
+    color:#0f172a;
+}
+
+.section-title .title-icon{
+    width:36px;
+    height:36px;
+    border-radius:9px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#dbeafe;
+    color:#2563eb;
+}
+
+/* =========================
+   FORM
+========================= */
+
+.form-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:18px;
+}
+
+.form-group{
+    display:flex;
+    flex-direction:column;
+}
+
+.form-group.full{
+    grid-column:1/-1;
+}
+
+.form-group label{
+    font-size:13px;
+    font-weight:bold;
+    margin-bottom:7px;
+    color:#334155;
+}
+
+.required{
+    color:#dc2626;
+}
+
+input,
+select,
+textarea{
+    width:100%;
+    border:1px solid #cbd5e1;
+    border-radius:8px;
+    padding:11px 12px;
+    font-size:14px;
+    outline:none;
+    background:#fff;
+    transition:.2s;
+}
+
+input:focus,
+select:focus,
+textarea:focus{
+    border-color:#2563eb;
+    box-shadow:0 0 0 3px rgba(37,99,235,.1);
+}
+
+textarea{
+    min-height:180px;
+    resize:vertical;
+    font-family:Consolas,monospace;
+}
+
+/* =========================
+   FILE INPUT
+========================= */
+
+.file-box{
+    border:2px dashed #93c5fd;
+    background:#eff6ff;
+    border-radius:10px;
+    padding:20px;
+    text-align:center;
+}
+
+.file-box input{
+    border:0;
+    background:transparent;
+}
+
+/* =========================
+   BUTTONS
+========================= */
+
+.buttons{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-top:20px;
+}
+
+button{
+    border:0;
+    border-radius:8px;
+    padding:12px 18px;
+    font-size:13px;
+    font-weight:bold;
+    cursor:pointer;
+    transition:.2s;
+}
+
+button:hover{
+    transform:translateY(-1px);
+    box-shadow:0 4px 10px rgba(0,0,0,.12);
+}
+
+.btn-primary{
+    background:#2563eb;
+    color:#fff;
+}
+
+.btn-success{
+    background:#059669;
+    color:#fff;
+}
+
+.btn-warning{
+    background:#f59e0b;
+    color:#fff;
+}
+
+.btn-danger{
+    background:#dc2626;
+    color:#fff;
+}
+
+.btn-secondary{
+    background:#64748b;
+    color:#fff;
+}
+
+/* =========================
+   PROGRESS
+========================= */
+
+.progress-container{
+    display:none;
+    margin-top:20px;
+}
+
+.progress-header{
+    display:flex;
+    justify-content:space-between;
+    margin-bottom:7px;
+    font-size:13px;
+    font-weight:bold;
+}
+
+.progress{
+    height:18px;
+    background:#e2e8f0;
+    border-radius:20px;
+    overflow:hidden;
+}
+
+.progress-bar{
+    height:100%;
+    width:0%;
+    background:linear-gradient(90deg,#2563eb,#06b6d4);
+    transition:width:.2s;
+}
+
+/* =========================
+   STATISTICS
+========================= */
+
+.stats{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:12px;
+}
+
+.stat{
+    padding:16px;
+    border-radius:10px;
+    background:#f8fafc;
+    border-left:4px solid #2563eb;
+}
+
+.stat-label{
+    font-size:11px;
+    color:#64748b;
+}
+
+.stat-value{
+    font-size:22px;
+    font-weight:bold;
+    margin-top:5px;
+}
+
+/* =========================
+   TABLE
+========================= */
+
+.table-wrapper{
+    overflow:auto;
+    max-height:550px;
+    border:1px solid #e2e8f0;
+    border-radius:10px;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    min-width:900px;
+}
+
+th{
+    background:#1e3a8a;
+    color:#fff;
+    padding:11px;
+    font-size:12px;
+    position:sticky;
+    top:0;
+    z-index:2;
+}
+
+td{
+    padding:9px 11px;
+    border-bottom:1px solid #e2e8f0;
+    font-size:12px;
+}
+
+tr:hover td{
+    background:#f8fafc;
+}
+
+/* =========================
+   STATUS
+========================= */
+
+.message{
+    display:none;
+    padding:13px 15px;
+    border-radius:8px;
+    margin-bottom:15px;
+    font-size:13px;
+    font-weight:bold;
+}
+
+.message.success{
+    display:block;
+    background:#dcfce7;
+    color:#166534;
+}
+
+.message.error{
+    display:block;
+    background:#fee2e2;
+    color:#991b1b;
+}
+
+.message.info{
+    display:block;
+    background:#dbeafe;
+    color:#1e40af;
+}
+
+/* =========================
+   FOOTER
+========================= */
+
+footer{
+    text-align:center;
+    padding:25px;
+    color:#64748b;
+    font-size:12px;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media(max-width:1000px){
+
+    .cards{
+        grid-template-columns:repeat(2,1fr);
+    }
+
+    .stats{
+        grid-template-columns:repeat(3,1fr);
+    }
+}
+
+@media(max-width:700px){
+
+    .sidebar{
+        position:relative;
+        width:100%;
+        height:auto;
+    }
+
+    .main{
+        margin-left:0;
+        padding:15px;
+    }
+
+    .form-grid{
+        grid-template-columns:1fr;
+    }
+
+    .cards{
+        grid-template-columns:1fr;
+    }
+
+    .stats{
+        grid-template-columns:repeat(2,1fr);
+    }
+}
+</style>
+</head>
+
+<body>
+
+<!-- =========================
+     SIDEBAR
+========================= -->
+
+<aside class="sidebar">
+
+    <div class="logo">
+        <div class="logo-icon">📊</div>
+        <h2>Candidate Response<br>Processor</h2>
+        <p>Bulk Objective Response System</p>
+    </div>
+
+    <nav class="sidebar-menu">
+
+        <a href="C:/Processor/index.html" class="active">
+            <span class="menu-icon">🏠</span>
+            <span>Dashboard</span>
+        </a>
+
+        <a href="#settings">
+            <span class="menu-icon">⚙️</span>
+            <span>Processing Settings</span>
+        </a>
+
+        <a href="#responses">
+            <span class="menu-icon">📝</span>
+            <span>Candidate Responses</span>
+        </a>
+
+        <a href="#statistics">
+            <span class="menu-icon">📈</span>
+            <span>Statistics</span>
+        </a>
+
+        <a href="#preview">
+            <span class="menu-icon">👁️</span>
+            <span>Preview Results</span>
+        </a>
+
+        <a href="#export">
+            <span class="menu-icon">📥</span>
+            <span>Export</span>
+        </a>
+
+        <div class="quick-title">Quick Links</div>
+
+        <div class="quick-links">
+
+            <a href="https://www.google.com"
+               target="_blank"
+               rel="noopener noreferrer">
+                <span class="menu-icon">🔗</span>
+                <span>Google</span>
+            </a>
+
+            <a href="https://www.microsoft.com"
+               target="_blank"
+               rel="noopener noreferrer">
+                <span class="menu-icon">🔗</span>
+                <span>Microsoft</span>
+            </a>
+
+        </div>
+
+    </nav>
+
+</aside>
+
+
+<!-- =========================
+     MAIN
+========================= -->
+
+<main class="main">
+
+    <div class="topbar" id="dashboard">
+
+        <div>
+            <h1>Candidate Response Processor</h1>
+            <p>Process large candidate response datasets quickly and export the results.</p>
+        </div>
+
+        <div style="font-size:30px;">
+            📊
+        </div>
+
+    </div>
+
+
+    <!-- MESSAGE -->
+
+    <div id="message" class="message"></div>
+
+
+    <!-- DASHBOARD CARDS -->
+
+    <div class="cards">
+
+        <div class="card">
+            <div class="card-icon">👥</div>
+            <div class="card-title">Candidates Found</div>
+            <div class="card-value" id="cardCandidates">0</div>
+        </div>
+
+        <div class="card">
+            <div class="card-icon">📝</div>
+            <div class="card-title">Questions</div>
+            <div class="card-value" id="cardQuestions">0</div>
+        </div>
+
+        <div class="card">
+            <div class="card-icon">📦</div>
+            <div class="card-title">Records Processed</div>
+            <div class="card-value" id="cardRecords">0</div>
+        </div>
+
+        <div class="card">
+            <div class="card-icon">⚠️</div>
+            <div class="card-title">Invalid Lines</div>
+            <div class="card-value" id="cardInvalid">0</div>
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         SETTINGS
+    ========================= -->
+
+    <section class="section" id="settings">
+
+        <div class="section-title">
+            <div class="title-icon">⚙️</div>
+            Processing Settings
+        </div>
+
+        <div class="form-grid">
+
+            <div class="form-group">
+                <label>
+                    Subject Code <span class="required">*</span>
+                </label>
+
+                <input
+                    type="text"
+                    id="subjectCode"
+                    placeholder="Example: MAT"
+                    required
+                >
+            </div>
+
+
+            <div class="form-group">
+                <label>
+                    Candidate ID Length <span class="required">*</span>
+                </label>
+
+                <input
+                    type="number"
+                    id="candidateIdLength"
+                    min="1"
+                    max="30"
+                    placeholder="Enter candidate ID length"
+                    required
+                >
+            </div>
+
+
+            <div class="form-group">
+                <label>
+                    Start Question <span class="required">*</span>
+                </label>
+
+                <input
+                    type="number"
+                    id="startQuestion"
+                    min="1"
+                    placeholder="Example: 1"
+                    required
+                >
+            </div>
+
+
+            <div class="form-group">
+                <label>
+                    End Question <span class="required">*</span>
+                </label>
+
+                <input
+                    type="number"
+                    id="endQuestion"
+                    min="1"
+                    placeholder="Example: 50"
+                    required
+                >
+            </div>
+
+
+            <div class="form-group">
+                <label>
+                    Allowed Responses
+                </label>
+
+                <input
+                    type="text"
+                    value="A, B, C, D"
+                    readonly
+                >
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================
+         CANDIDATE RESPONSES
+    ========================= -->
+
+    <section class="section" id="responses">
+
+        <div class="section-title">
+            <div class="title-icon">📝</div>
+            Candidate Responses
+        </div>
+
+        <div class="form-group">
+
+            <label>
+                Select Candidate Response File
+                <span class="required">*</span>
+            </label>
+
+            <div class="file-box">
+
+                <input
+                    type="file"
+                    id="candidateFile"
+                    accept=".txt,.csv,.dat,.text"
+                    required
+                >
+
+                <p style="margin-top:8px;color:#64748b;font-size:12px;">
+                    Select TXT, CSV, DAT or TEXT candidate response file
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div style="text-align:center;margin:18px 0;color:#94a3b8;">
+            OR
+        </div>
+
+
+        <div class="form-group">
+
+            <label>Raw Candidate Data</label>
+
+            <textarea
+                id="rawData"
+                placeholder="Candidate data will appear here after selecting a file..."
+            ></textarea>
+
+        </div>
+
+
+        <div class="buttons">
+
+            <button
+                class="btn-primary"
+                onclick="processData()">
+                ▶ PROCESS DATA
+            </button>
+
+            <button
+                class="btn-warning"
+                onclick="loadSample()">
+                🧪 LOAD SAMPLE
+            </button>
+
+            <button
+                class="btn-danger"
+                onclick="clearAll()">
+                🗑 CLEAR
+            </button>
+
+        </div>
+
+
+        <!-- PROGRESS -->
+
+        <div
+            class="progress-container"
+            id="progressContainer">
+
+            <div class="progress-header">
+
+                <span id="progressText">
+                    Processing...
+                </span>
+
+                <span id="progressPercent">
+                    0%
+                </span>
+
+            </div>
+
+            <div class="progress">
+
+                <div
+                    class="progress-bar"
+                    id="progressBar">
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================
+         STATISTICS
+    ========================= -->
+
+    <section class="section" id="statistics">
+
+        <div class="section-title">
+            <div class="title-icon">📈</div>
+            Processing Statistics
+        </div>
+
+        <div class="stats">
+
+            <div class="stat">
+                <div class="stat-label">Total Lines</div>
+                <div class="stat-value" id="totalLines">0</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-label">Candidates Found</div>
+                <div class="stat-value" id="candidatesFound">0</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-label">Invalid Lines</div>
+                <div class="stat-value" id="invalidLines">0</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-label">Questions</div>
+                <div class="stat-value" id="questionCount">0</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-label">Data Size</div>
+                <div class="stat-value" id="dataSize">0 KB</div>
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================
+         PREVIEW
+    ========================= -->
+
+    <section class="section" id="preview">
+
+        <div class="section-title">
+            <div class="title-icon">👁️</div>
+            Preview Results
+        </div>
+
+        <div class="table-wrapper">
+
+            <table>
+
+                <thead id="tableHead">
+                    <tr>
+                        <th>Candidate ID</th>
+                        <th>Subject</th>
+                        <th>Responses</th>
+                    </tr>
+                </thead>
+
+                <tbody id="previewBody">
+
+                    <tr>
+                        <td colspan="3"
+                            style="text-align:center;color:#64748b;">
+                            No results available.
+                        </td>
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================
+         EXPORT
+    ========================= -->
+
+    <section class="section" id="export">
+
+        <div class="section-title">
+            <div class="title-icon">📥</div>
+            Export Results
+        </div>
+
+        <p style="color:#64748b;font-size:13px;margin-bottom:15px;">
+            Export the processed candidate responses to an Excel workbook.
+        </p>
+
+        <div class="buttons">
+
+            <button
+                class="btn-success"
+                onclick="exportExcel()">
+                📊 EXPORT ALL TO EXCEL
+            </button>
+
+        </div>
+
+    </section>
+
+
+    <footer>
+        Developed by: <strong>O.Q.Q Services International</strong>
+    </footer>
+
+</main>
+
+
+<script>
+
+/* =====================================================
+   GLOBAL VARIABLES
+===================================================== */
+
+let processedResults = [];
+
+let processing = false;
+
+
+/* =====================================================
+   ELEMENTS
+===================================================== */
+
+const candidateFile =
+    document.getElementById("candidateFile");
+
+const rawData =
+    document.getElementById("rawData");
+
+const messageBox =
+    document.getElementById("message");
+
+
+/* =====================================================
+   FILE SELECTION
+===================================================== */
+
+candidateFile.addEventListener("change", function(){
+
+    const file = this.files[0];
+
+    if(!file){
+        return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = function(e){
+
+        rawData.value = e.target.result;
+
+        showMessage(
+            "File loaded successfully. You can now process the data.",
+            "success"
+        );
+
+    };
+
+    reader.onerror = function(){
+
+        showMessage(
+            "Unable to read the selected file.",
+            "error"
+        );
+
+    };
+
+    reader.readAsText(file);
+
+});
+
+
+/* =====================================================
+   MESSAGE
+===================================================== */
+
+function showMessage(text,type){
+
+    messageBox.className =
+        "message " + type;
+
+    messageBox.textContent = text;
+
+    messageBox.style.display = "block";
+
+}
+
+
+/* =====================================================
+   VALIDATE SETTINGS
+===================================================== */
+
+function validateSettings(){
+
+    const subject =
+        document.getElementById("subjectCode").value.trim();
+
+    const idLength =
+        parseInt(
+            document.getElementById("candidateIdLength").value
+        );
+
+    const start =
+        parseInt(
+            document.getElementById("startQuestion").value
+        );
+
+    const end =
+        parseInt(
+            document.getElementById("endQuestion").value
+        );
+
+    if(!subject){
+
+        showMessage(
+            "Subject Code is required.",
+            "error"
+        );
+
+        return null;
+    }
+
+    if(!idLength || idLength < 1){
+
+        showMessage(
+            "Candidate ID Length is required.",
+            "error"
+        );
+
+        return null;
+    }
+
+    if(!start || start < 1){
+
+        showMessage(
+            "Start Question is required.",
+            "error"
+        );
+
+        return null;
+    }
+
+    if(!end || end < 1){
+
+        showMessage(
+            "End Question is required.",
+            "error"
+        );
+
+        return null;
+    }
+
+    if(end < start){
+
+        showMessage(
+            "End Question cannot be less than Start Question.",
+            "error"
+        );
+
+        return null;
+    }
+
+    return {
+        subject,
+        idLength,
+        start,
+        end
+    };
+
+}
+
+
+/* =====================================================
+   EXTRACT RESPONSE CHARACTERS
+===================================================== */
+
+function extractResponses(text,settings){
+
+    /*
+       Only A, B, C and D are accepted.
+       E and all other letters are ignored.
+    */
+
+    const cleaned =
+        text.toUpperCase();
+
+    /*
+       Remove subject code so that letters in the
+       subject code cannot accidentally become answers.
+    */
+
+    const subjectPattern =
+        settings.subject
+            .replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+
+    const withoutSubject =
+        cleaned.replace(
+            new RegExp(subjectPattern,"g"),
+            " "
+        );
+
+    /*
+       Extract A-D groups.
+    */
+
+    const matches =
+        withoutSubject.match(/[ABCD]+/g);
+
+    if(!matches){
+        return "";
+    }
+
+    return matches.join("");
+}
+
+
+/* =====================================================
+   FIND CANDIDATE ID
+===================================================== */
+
+function findCandidateId(text,length){
+
+    const regex =
+        new RegExp(
+            "\\b\\d{" + length + "}\\b"
+        );
+
+    const match =
+        text.match(regex);
+
+    if(!match){
+        return null;
+    }
+
+    return match[0];
+}
+
+
+/* =====================================================
+   PROCESS DATA
+===================================================== */
+
+async function processData(){
+
+    if(processing){
+        return;
+    }
+
+    const settings =
+        validateSettings();
+
+    if(!settings){
+        return;
+    }
+
+    const text =
+        rawData.value.trim();
+
+    if(!text){
+
+        showMessage(
+            "Please select a candidate response file or load candidate data.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    const lines =
+        text.split(/\r?\n/);
+
+
+    const total =
+        lines.length;
+
+
+    const questions =
+        settings.end -
+        settings.start +
+        1;
+
+
+    processedResults = [];
+
+    processing = true;
+
+
+    document.getElementById(
+        "progressContainer"
+    ).style.display = "block";
+
+
+    document.getElementById(
+        "progressBar"
+    ).style.width = "0%";
+
+
+    document.getElementById(
+        "progressPercent"
+    ).textContent = "0%";
+
+
+    document.getElementById(
+        "progressText"
+    ).textContent = "Starting...";
+
+
+    let invalid = 0;
+
+
+    /*
+       Process in batches to reduce browser freezing.
+    */
+
+    const batchSize = 1000;
+
+
+    for(
+        let i = 0;
+        i < total;
+        i += batchSize
+    ){
+
+        const end =
+            Math.min(
+                i + batchSize,
+                total
+            );
+
+
+        for(
+            let j = i;
+            j < end;
+            j++
+        ){
+
+            const line =
+                lines[j].trim();
+
+
+            if(!line){
+                continue;
+            }
+
+
+            const candidateId =
+                findCandidateId(
+                    line,
+                    settings.idLength
+                );
+
+
+            if(!candidateId){
+
+                invalid++;
+
+                continue;
+            }
+
+
+            let responses =
+                extractResponses(
+                    line,
+                    settings
+                );
+
+
+            /*
+               Keep exactly the requested question range.
+            */
+
+            if(responses.length > questions){
+
+                responses =
+                    responses.substring(
+                        0,
+                        questions
+                    );
+
+            }
+
+
+            /*
+               Pad missing responses.
+            */
+
+            if(responses.length < questions){
+
+                responses =
+                    responses.padEnd(
+                        questions,
+                        ""
+                    );
+
+            }
+
+
+            const result = {
+
+                "Candidate ID":
+                    candidateId,
+
+                "Subject":
+                    settings.subject
+
+            };
+
+
+            for(
+                let q = 0;
+                q < questions;
+                q++
+            ){
+
+                result[
+                    "Q" +
+                    (settings.start + q)
+                ] =
+                    responses[q] || "";
+
+            }
+
+
+            processedResults.push(result);
+
+        }
+
+
+        const percent =
+            Math.round(
+                (end / total) * 100
+            );
+
+
+        document.getElementById(
+            "progressBar"
+        ).style.width =
+            percent + "%";
+
+
+        document.getElementById(
+            "progressPercent"
+        ).textContent =
+            percent + "%";
+
+
+        document.getElementById(
+            "progressText"
+        ).textContent =
+            "Processing " +
+            end.toLocaleString() +
+            " of " +
+            total.toLocaleString();
+
+
+        /*
+           Give the browser time to update.
+        */
+
+        await new Promise(
+            resolve =>
+                setTimeout(resolve,0)
+        );
+
+    }
+
+
+    processing = false;
+
+
+    updateStatistics(
+        total,
+        processedResults.length,
+        invalid,
+        questions,
+        text.length
+    );
+
+
+    displayPreview();
+
+
+    document.getElementById(
+        "progressText"
+    ).textContent =
+        "Processing completed";
+
+
+    document.getElementById(
+        "progressPercent"
+    ).textContent =
+        "100%";
+
+
+    showMessage(
+        "Processing completed successfully. " +
+        processedResults.length.toLocaleString() +
+        " candidate records were processed.",
+        "success"
+    );
+
+}
+
+
+/* =====================================================
+   UPDATE STATISTICS
+===================================================== */
+
+function updateStatistics(
+    total,
+    candidates,
+    invalid,
+    questions,
+    size
+){
+
+    document.getElementById(
+        "totalLines"
+    ).textContent =
+        total.toLocaleString();
+
+
+    document.getElementById(
+        "candidatesFound"
+    ).textContent =
+        candidates.toLocaleString();
+
+
+    document.getElementById(
+        "invalidLines"
+    ).textContent =
+        invalid.toLocaleString();
+
+
+    document.getElementById(
+        "questionCount"
+    ).textContent =
+        questions.toLocaleString();
+
+
+    document.getElementById(
+        "dataSize"
+    ).textContent =
+        formatBytes(size);
+
+
+    document.getElementById(
+        "cardCandidates"
+    ).textContent =
+        candidates.toLocaleString();
+
+
+    document.getElementById(
+        "cardQuestions"
+    ).textContent =
+        questions.toLocaleString();
+
+
+    document.getElementById(
+        "cardRecords"
+    ).textContent =
+        candidates.toLocaleString();
+
+
+    document.getElementById(
+        "cardInvalid"
+    ).textContent =
+        invalid.toLocaleString();
+
+}
+
+
+/* =====================================================
+   FORMAT FILE SIZE
+===================================================== */
+
+function formatBytes(bytes){
+
+    if(bytes === 0){
+        return "0 KB";
+    }
+
+    const units =
+        ["Bytes","KB","MB","GB"];
+
+    const index =
+        Math.floor(
+            Math.log(bytes) /
+            Math.log(1024)
+        );
+
+    return (
+        bytes /
+        Math.pow(1024,index)
+    ).toFixed(2)
+    + " "
+    + units[index];
+
+}
+
+
+/* =====================================================
+   DISPLAY PREVIEW
+===================================================== */
+
+function displayPreview(){
+
+    const head =
+        document.getElementById("tableHead");
+
+    const body =
+        document.getElementById("previewBody");
+
+
+    head.innerHTML = "";
+    body.innerHTML = "";
+
+
+    if(!processedResults.length){
+
+        body.innerHTML =
+            `<tr>
+                <td colspan="3"
+                    style="text-align:center;">
+                    No valid candidate records found.
+                </td>
+             </tr>`;
+
+        return;
+    }
+
+
+    /*
+       Preview maximum 100 records.
+       This prevents huge tables from slowing the browser.
+    */
+
+    const preview =
+        processedResults.slice(0,100);
+
+
+    const headers =
+        Object.keys(
+            processedResults[0]
+        );
+
+
+    const headerRow =
+        document.createElement("tr");
+
+
+    headers.forEach(header => {
+
+        const th =
+            document.createElement("th");
+
+        th.textContent =
+            header;
+
+        headerRow.appendChild(th);
+
+    });
+
+
+    head.appendChild(headerRow);
+
+
+    preview.forEach(row => {
+
+        const tr =
+            document.createElement("tr");
+
+
+        headers.forEach(header => {
+
+            const td =
+                document.createElement("td");
+
+            td.textContent =
+                row[header];
+
+            tr.appendChild(td);
+
+        });
+
+
+        body.appendChild(tr);
+
+    });
+
+}
+
+
+/* =====================================================
+   EXPORT EXCEL
+===================================================== */
+
+function exportExcel(){
+
+    if(!processedResults.length){
+
+        showMessage(
+            "There are no processed results to export.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    if(typeof XLSX === "undefined"){
+
+        showMessage(
+            "Excel library could not be loaded. Check your internet connection and try again.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    try{
+
+        showMessage(
+            "Preparing Excel workbook...",
+            "info"
+        );
+
+
+        /*
+           Convert processed results to worksheet.
+        */
+
+        const worksheet =
+            XLSX.utils.json_to_sheet(
+                processedResults
+            );
+
+
+        const workbook =
+            XLSX.utils.book_new();
+
+
+        XLSX.utils.book_append_sheet(
+            workbook,
+            worksheet,
+            "Candidate Responses"
+        );
+
+
+        const subject =
+            document.getElementById(
+                "subjectCode"
+            ).value.trim()
+            || "Responses";
+
+
+        const filename =
+            subject +
+            "_Candidate_Responses.xlsx";
+
+
+        XLSX.writeFile(
+            workbook,
+            filename
+        );
+
+
+        showMessage(
+            "Excel file exported successfully.",
+            "success"
+        );
+
+    }
+    catch(error){
+
+        console.error(error);
+
+        showMessage(
+            "An error occurred while exporting the Excel file.",
+            "error"
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   LOAD SAMPLE DATA
+===================================================== */
+
+function loadSample(){
+
+    document.getElementById(
+        "subjectCode"
+    ).value = "MAT";
+
+
+    document.getElementById(
+        "candidateIdLength"
+    ).value = "8";
+
+
+    document.getElementById(
+        "startQuestion"
+    ).value = "1";
+
+
+    document.getElementById(
+        "endQuestion"
+    ).value = "20";
+
+
+    rawData.value =
+`12345678 MAT M ABCDABCDABCDABCDABCD
+12345679 MAT F DCBADCBADCBADCBAD CBA
+12345680 MAT M AABBCCDDAABBCCDDAABB
+12345681 MAT F DDDDCCCCBBBBAAAAABCD
+12345682 MAT M ABCDABCDABCDABCDABCD`;
+
+
+    /*
+       Remove spaces inside sample response line.
+    */
+
+    rawData.value =
+        rawData.value
+        .split("\n")
+        .map(line => line.replace(/\s+/g," "))
+        .join("\n");
+
+
+    showMessage(
+        "Sample data loaded successfully.",
+        "success"
+    );
+
+}
+
+
+/* =====================================================
+   CLEAR EVERYTHING
+===================================================== */
+
+function clearAll(){
+
+    if(processing){
+        return;
+    }
+
+
+    document.getElementById(
+        "subjectCode"
+    ).value = "";
+
+
+    document.getElementById(
+        "candidateIdLength"
+    ).value = "";
+
+
+    document.getElementById(
+        "startQuestion"
+    ).value = "";
+
+
+    document.getElementById(
+        "endQuestion"
+    ).value = "";
+
+
+    candidateFile.value = "";
+
+
+    rawData.value = "";
+
+
+    processedResults = [];
+
+
+    document.getElementById(
+        "totalLines"
+    ).textContent = "0";
+
+
+    document.getElementById(
+        "candidatesFound"
+    ).textContent = "0";
+
+
+    document.getElementById(
+        "invalidLines"
+    ).textContent = "0";
+
+
+    document.getElementById(
+        "questionCount"
+    ).textContent = "0";
+
+
+    document.getElementById(
+        "dataSize"
+    ).textContent = "0 KB";
+
+
+    document.getElementById(
+        "cardCandidates"
+    ).textContent = "0";
+
+
+    document.getElementById(
+        "cardQuestions"
+    ).textContent = "0";
+
+
+    document.getElementById(
+        "cardRecords"
+    ).textContent = "0";
+
+
+    document.getElementById(
+        "cardInvalid"
+    ).textContent = "0";
+
+
+    document.getElementById(
+        "previewBody"
+    ).innerHTML =
+        `<tr>
+            <td colspan="3"
+                style="text-align:center;color:#64748b;">
+                No results available.
+            </td>
+        </tr>`;
+
+
+    document.getElementById(
+        "progressContainer"
+    ).style.display = "none";
+
+
+    messageBox.style.display = "none";
+
+}
+
+
+/* =====================================================
+   SIDEBAR ACTIVE MENU
+===================================================== */
+
+document.querySelectorAll(
+    ".sidebar-menu a"
+).forEach(link => {
+
+    link.addEventListener(
+        "click",
+        function(){
+
+            document.querySelectorAll(
+                ".sidebar-menu a"
+            ).forEach(item =>
+                item.classList.remove("active")
+            );
+
+            this.classList.add("active");
+
+        }
+    );
+
+});
+
+
+/* =====================================================
+   PREVENT ACCIDENTAL PAGE LEAVE DURING PROCESSING
+===================================================== */
+
+window.addEventListener(
+    "beforeunload",
+    function(event){
+
+        if(processing){
+
+            event.preventDefault();
+
+            event.returnValue = "";
+
+        }
+
+    }
+);
+
+</script>
+
+</body>
+</html>
+

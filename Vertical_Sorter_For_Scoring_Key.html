@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Scoring Key Vertical Sorter</title>
+
+<!-- Excel Library -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        background: #f3f6f9;
+        color: #222;
+    }
+
+    .container {
+        width: 95%;
+        max-width: 900px;
+        margin: 30px auto;
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.12);
+    }
+
+    h1 {
+        text-align: center;
+        margin-top: 0;
+        color: #1b4f72;
+    }
+
+    .subtitle {
+        text-align: center;
+        color: #666;
+        margin-bottom: 25px;
+    }
+
+    .form-group {
+        margin-bottom: 18px;
+    }
+
+    label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 7px;
+    }
+
+    input[type="file"],
+    input[type="number"],
+    input[type="text"] {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #bbb;
+        border-radius: 6px;
+        font-size: 15px;
+    }
+
+    input[type="file"] {
+        background: #fafafa;
+    }
+
+    .row {
+        display: flex;
+        gap: 15px;
+    }
+
+    .row .form-group {
+        flex: 1;
+    }
+
+    button {
+        border: none;
+        border-radius: 6px;
+        padding: 13px 18px;
+        font-size: 15px;
+        font-weight: bold;
+        cursor: pointer;
+        margin: 5px;
+    }
+
+    .btn-primary {
+        background: #1976d2;
+        color: white;
+    }
+
+    .btn-success {
+        background: #2e7d32;
+        color: white;
+    }
+
+    .btn-danger {
+        background: #c62828;
+        color: white;
+    }
+
+    .btn-info {
+        background: #00838f;
+        color: white;
+    }
+
+    button:hover {
+        opacity: 0.88;
+    }
+
+    .button-area {
+        text-align: center;
+        margin-top: 20px;
+    }
+
+    .status {
+        margin-top: 20px;
+        padding: 14px;
+        background: #eef4f8;
+        border-left: 5px solid #1976d2;
+        border-radius: 5px;
+    }
+
+    .key-box {
+        margin-top: 25px;
+    }
+
+    textarea {
+        width: 100%;
+        min-height: 130px;
+        resize: vertical;
+        padding: 12px;
+        font-size: 16px;
+        border: 1px solid #bbb;
+        border-radius: 6px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+
+    th,
+    td {
+        border: 1px solid #ccc;
+        padding: 9px;
+        text-align: center;
+    }
+
+    th {
+        background: #1b4f72;
+        color: white;
+    }
+
+    tbody tr:nth-child(even) {
+        background: #f7f7f7;
+    }
+
+    .hidden {
+        display: none;
+    }
+
+    .count {
+        margin-top: 10px;
+        font-weight: bold;
+        color: #1b4f72;
+    }
+
+    .file-name {
+        margin-top: 8px;
+        color: #555;
+        font-size: 14px;
+    }
+
+    @media(max-width: 650px) {
+        .row {
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .container {
+            padding: 20px;
+        }
+
+        button {
+            width: 100%;
+            margin: 5px 0;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>Scoring Key Vertical Sorter Application</h1>
+
+    <div class="subtitle">
+        Select an answer-key file and convert the question key into vertical format.
+    </div>
+	<div>
+	
+	<a href="C:/xampp/htdocs/Processor/index.html" class="active" style="display:flex; align-items:center; justify-content:flex-end; gap:10px;">
+    <span>Dashboard</span>
+    <span class="menu-icon">🏠</span>
+</a>
+	<!--<a href="C:/xampp/htdocs/Processor/index.html" class="active">
+            <span class="menu-icon">🏠</span>
+            <span>Dashboard</span>
+        </a>-->
+
+	</div><br>
+    <!-- CHOOSE FILE -->
+    <div class="form-group">
+        <label for="fileInput">Choose Answer Key File</label>
+
+        <input
+            type="file"
+            id="fileInput"
+            accept=".txt,.csv,.xlsx,.xls"
+        >
+
+        <div id="fileName" class="file-name">
+            No file selected.
+        </div>
+    </div>
+
+
+    <!-- START AND END QUESTION -->
+    <div class="row">
+
+        <div class="form-group">
+            <label for="startQuestion">
+                Start Question
+            </label>
+
+            <input
+                type="number"
+                id="startQuestion"
+                min="1"
+                value="1"
+            >
+        </div>
+
+
+        <div class="form-group">
+            <label for="endQuestion">
+                End Question
+            </label>
+
+            <input
+                type="number"
+                id="endQuestion"
+                min="1"
+                value="50"
+            >
+        </div>
+
+    </div>
+
+
+    <!-- QUESTION KEY -->
+    <div class="key-box">
+
+        <label for="questionKey">
+            Question Key
+        </label>
+
+        <textarea
+            id="questionKey"
+            readonly
+            placeholder="The answer key from the selected file will appear here..."
+        ></textarea>
+
+        <div id="keyCount" class="count">
+            Questions detected: 0
+        </div>
+
+    </div>
+
+
+    <!-- BUTTONS -->
+    <div class="button-area">
+
+        <button
+            class="btn-primary"
+            onclick="loadAndProcessFile()">
+            📂 Load Question Key
+        </button>
+
+        <button
+            class="btn-info"
+            onclick="sortVertically()">
+            ↕ Sort Key Vertically
+        </button>
+
+        <button
+            id="exportButton"
+            class="btn-success"
+            onclick="exportExcel()"
+            disabled>
+            📊 Export to Excel
+        </button>
+
+        <button
+            class="btn-danger"
+            onclick="clearAll()">
+            🧹 Clear
+        </button>
+
+    </div>
+
+
+    <!-- STATUS -->
+    <div id="status" class="status">
+        Please choose an answer-key file.
+    </div>
+
+
+    <!-- VERTICAL RESULT -->
+    <div id="resultArea" class="hidden">
+
+        <h2>Vertical Question Key</h2>
+
+        <table id="resultTable">
+
+            <thead>
+                <tr>
+                    <th>Question</th>
+                    <th>Key</th>
+                </tr>
+            </thead>
+
+            <tbody id="resultBody">
+            </tbody>
+
+        </table>
+
+    </div>
+	
+
+</div>
+<script>
+
+let selectedFile = null;
+let answerKey = [];
+let verticalData = [];
+
+
+/* ==========================================
+   FILE SELECTION
+========================================== */
+
+document
+.getElementById("fileInput")
+.addEventListener("change", function(event) {
+
+    selectedFile = event.target.files[0];
+
+    if (!selectedFile) {
+        document.getElementById("fileName").textContent =
+            "No file selected.";
+
+        return;
+    }
+
+    document.getElementById("fileName").innerHTML =
+        "Selected file: <strong>" +
+        escapeHTML(selectedFile.name) +
+        "</strong>";
+
+    document.getElementById("status").textContent =
+        "File selected. Click 'Load Question Key'.";
+
+});
+
+
+/* ==========================================
+   LOAD FILE
+========================================== */
+
+function loadAndProcessFile() {
+
+    if (!selectedFile) {
+
+        alert("Please choose a file first.");
+
+        return;
+    }
+
+    const extension =
+        selectedFile.name
+        .split(".")
+        .pop()
+        .toLowerCase();
+
+
+    if (
+        extension === "xlsx" ||
+        extension === "xls"
+    ) {
+
+        readExcel(selectedFile);
+
+    } else {
+
+        readText(selectedFile);
+
+    }
+
+}
+
+
+/* ==========================================
+   READ TXT / CSV
+========================================== */
+
+function readText(file) {
+
+    const reader = new FileReader();
+
+    reader.onload = function(event) {
+
+        let text = event.target.result;
+
+        text = text.trim();
+
+        if (!text) {
+
+            alert("The selected file is empty.");
+
+            return;
+        }
+
+        answerKey = extractAnswerKey(text);
+
+        finishLoading();
+
+    };
+
+    reader.onerror = function() {
+
+        alert("Unable to read the selected file.");
+
+    };
+
+    reader.readAsText(file);
+
+}
+
+
+/* ==========================================
+   READ EXCEL
+========================================== */
+
+function readExcel(file) {
+
+    const reader = new FileReader();
+
+    reader.onload = function(event) {
+
+        try {
+
+            const data =
+                new Uint8Array(event.target.result);
+
+            const workbook =
+                XLSX.read(data, {
+                    type: "array"
+                });
+
+            const firstSheet =
+                workbook.Sheets[
+                    workbook.SheetNames[0]
+                ];
+
+            const rows =
+                XLSX.utils.sheet_to_json(
+                    firstSheet,
+                    {
+                        header: 1,
+                        raw: false,
+                        defval: ""
+                    }
+                );
+
+
+            /*
+             Convert all cells to text
+            */
+
+            let text = "";
+
+            rows.forEach(function(row) {
+
+                row.forEach(function(cell) {
+
+                    if (
+                        cell !== null &&
+                        cell !== undefined
+                    ) {
+
+                        text += String(cell) + " ";
+
+                    }
+
+                });
+
+            });
+
+
+            answerKey =
+                extractAnswerKey(text);
+
+            finishLoading();
+
+        }
+
+        catch(error) {
+
+            alert(
+                "Error reading Excel file: " +
+                error.message
+            );
+
+        }
+
+    };
+
+    reader.onerror = function() {
+
+        alert("Unable to read the Excel file.");
+
+    };
+
+    reader.readAsArrayBuffer(file);
+
+}
+
+
+/* ==========================================
+   EXTRACT ANSWER KEY
+========================================== */
+
+function extractAnswerKey(text) {
+
+    /*
+       Remove common separators.
+    */
+
+    text = text
+        .replace(/[\r\n\t,;|]+/g, " ")
+        .trim();
+
+
+    /*
+       First try to find individual A/B/C/D/E
+       answers.
+    */
+
+    let letters =
+        text.match(/[ABCDE]/gi);
+
+
+    if (!letters) {
+        return [];
+    }
+
+
+    /*
+       Convert to uppercase.
+    */
+
+    return letters.map(function(letter) {
+
+        return letter.toUpperCase();
+
+    });
+
+}
+
+
+/* ==========================================
+   FINISH LOADING
+========================================== */
+
+function finishLoading() {
+
+    const start =
+        parseInt(
+            document.getElementById(
+                "startQuestion"
+            ).value
+        );
+
+    const end =
+        parseInt(
+            document.getElementById(
+                "endQuestion"
+            ).value
+        );
+
+
+    if (
+        isNaN(start) ||
+        isNaN(end) ||
+        start < 1 ||
+        end < start
+    ) {
+
+        alert(
+            "Please enter a valid Start Question and End Question."
+        );
+
+        return;
+    }
+
+
+    const requested =
+        end - start + 1;
+
+
+    /*
+       Limit to requested range.
+    */
+
+    const selected =
+        answerKey.slice(0, requested);
+
+
+    /*
+       Display key as horizontal string.
+    */
+
+    document.getElementById("questionKey").value =
+        selected.join("");
+
+
+    document.getElementById("keyCount").textContent =
+        "Questions detected: " +
+        selected.length;
+
+
+    document.getElementById("status").innerHTML =
+        "<strong>Question key loaded successfully.</strong><br>" +
+        "Questions " +
+        start +
+        " to " +
+        end +
+        " requested.<br>" +
+        "Answers found: " +
+        selected.length;
+
+
+    /*
+       Clear old result.
+    */
+
+    verticalData = [];
+
+    document
+        .getElementById("resultArea")
+        .classList.add("hidden");
+
+    document.getElementById("exportButton").disabled =
+        true;
+
+}
+
+
+/* ==========================================
+   SORT KEY VERTICALLY
+========================================== */
+
+function sortVertically() {
+
+    const start =
+        parseInt(
+            document.getElementById(
+                "startQuestion"
+            ).value
+        );
+
+    const end =
+        parseInt(
+            document.getElementById(
+                "endQuestion"
+            ).value
+        );
+
+    const key =
+        document
+        .getElementById("questionKey")
+        .value
+        .trim()
+        .toUpperCase();
+
+
+    if (!key) {
+
+        alert(
+            "Please choose a file and load the Question Key first."
+        );
+
+        return;
+    }
+
+
+    if (
+        isNaN(start) ||
+        isNaN(end) ||
+        start < 1 ||
+        end < start
+    ) {
+
+        alert(
+            "Please enter a valid question range."
+        );
+
+        return;
+    }
+
+
+    const expected =
+        end - start + 1;
+
+
+    /*
+       Remove anything that is not
+       A, B, C, D or E.
+    */
+
+    const cleanKey =
+        key.replace(/[^ABCDE]/g, "");
+
+
+    if (cleanKey.length === 0) {
+
+        alert(
+            "No valid A/B/C/D/E answer key was found."
+        );
+
+        return;
+    }
+
+
+    verticalData = [];
+
+
+    /*
+       Create vertical rows.
+    */
+
+    for (
+        let i = 0;
+        i < Math.min(cleanKey.length, expected);
+        i++
+    ) {
+
+        verticalData.push([
+            start + i,
+            cleanKey[i]
+        ]);
+
+    }
+
+
+    /*
+       Display result.
+    */
+
+    const body =
+        document.getElementById("resultBody");
+
+    body.innerHTML = "";
+
+
+    verticalData.forEach(function(row) {
+
+        const tr =
+            document.createElement("tr");
+
+        const question =
+            document.createElement("td");
+
+        const keyCell =
+            document.createElement("td");
+
+
+        question.textContent = row[0];
+
+        keyCell.textContent = row[1];
+
+
+        tr.appendChild(question);
+
+        tr.appendChild(keyCell);
+
+        body.appendChild(tr);
+
+    });
+
+
+    document
+        .getElementById("resultArea")
+        .classList.remove("hidden");
+
+
+    document.getElementById("exportButton").disabled =
+        false;
+
+
+    document.getElementById("status").innerHTML =
+        "<strong>Vertical sorting completed.</strong><br>" +
+        verticalData.length +
+        " questions processed.";
+
+}
+
+
+/* ==========================================
+   EXPORT TO EXCEL
+========================================== */
+
+function exportExcel() {
+
+    if (verticalData.length === 0) {
+
+        alert(
+            "Please sort the Question Key vertically first."
+        );
+
+        return;
+    }
+
+
+    const worksheetData = [
+        [
+            "Question",
+            "Key"
+        ]
+    ];
+
+
+    verticalData.forEach(function(row) {
+
+        worksheetData.push([
+            row[0],
+            row[1]
+        ]);
+
+    });
+
+
+    /*
+       Create worksheet
+    */
+
+    const worksheet =
+        XLSX.utils.aoa_to_sheet(
+            worksheetData
+        );
+
+
+    /*
+       Column widths
+    */
+
+    worksheet["!cols"] = [
+        { wch: 15 },
+        { wch: 10 }
+    ];
+
+
+    /*
+       Create workbook
+    */
+
+    const workbook =
+        XLSX.utils.book_new();
+
+
+    XLSX.utils.book_append_sheet(
+        workbook,
+        worksheet,
+        "Question Key"
+    );
+
+
+    /*
+       Export
+    */
+
+    XLSX.writeFile(
+        workbook,
+        "Vertical_Question_Key.xlsx"
+    );
+
+
+    document.getElementById("status").innerHTML =
+        "<strong>Excel file exported successfully.</strong>";
+}
+
+
+/* ==========================================
+   CLEAR EVERYTHING
+========================================== */
+
+function clearAll() {
+
+    selectedFile = null;
+
+    answerKey = [];
+
+    verticalData = [];
+
+
+    document.getElementById("fileInput").value =
+        "";
+
+    document.getElementById("fileName").textContent =
+        "No file selected.";
+
+
+    document.getElementById("startQuestion").value =
+        "1";
+
+    document.getElementById("endQuestion").value =
+        "50";
+
+
+    document.getElementById("questionKey").value =
+        "";
+
+
+    document.getElementById("keyCount").textContent =
+        "Questions detected: 0";
+
+
+    document.getElementById("resultBody").innerHTML =
+        "";
+
+
+    document
+        .getElementById("resultArea")
+        .classList.add("hidden");
+
+
+    document.getElementById("exportButton").disabled =
+        true;
+
+
+    document.getElementById("status").textContent =
+        "Please choose an answer-key file.";
+
+}
+
+
+/* ==========================================
+   ESCAPE HTML
+========================================== */
+
+function escapeHTML(value) {
+
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+}
+
+</script>
+
+</body>
+<hr>
+	<center><b><p>Powered By: O.Q.Q. Services International</p></b></center>
+</html>
